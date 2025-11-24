@@ -1,0 +1,97 @@
+2025-11-19 01:25:26 | AUTH LOGIN ATTEMPT | Username: admin
+2025-11-19 01:25:26 | AUTH LOGIN SUCCESS | UserId: USR_001 | Username: admin
+2025-11-19 01:42:01 | CLIENT CREATE ATTEMPT | Name='TestLog' | Mail='test@log.mg'
+2025-11-19 01:42:01 | CLIENT CREATED | Id=CLI_002 | Name='TestLog'
+2025-11-19 01:42:01 | CLIENT ADD COUNTRY | ClientId=CLI_002 | CountryId=PAY_001
+2025-11-19 01:42:06 | CLIENT GET ALL | Fetching all clients with countries…
+2025-11-19 01:42:06 | CLIENT GET ALL | Total=2
+2025-11-19 01:42:10 | CLIENT GET-PAYS | ClientId=CLI_002
+2025-11-19 01:42:10 | CLIENT GET-PAYS RESULT | ClientId=CLI_002 | Count=1
+2025-11-19 01:42:15 | CLIENT UPDATE ATTEMPT | Id=CLI_002
+2025-11-19 01:42:15 | CLIENT UPDATE | Id=CLI_002 | Fields updated
+2025-11-19 01:42:15 | CLIENT UPDATE ADD COUNTRY | ClientId=CLI_002 | CountryId=PAY_001
+2025-11-19 01:42:17 | CLIENT GET ALL | Fetching all clients with countries…
+2025-11-19 01:42:17 | CLIENT GET ALL | Total=2
+2025-11-19 12:25:34 | AUTH LOGIN ATTEMPT | Username: admin
+2025-11-19 12:25:35 | AUTH LOGIN SUCCESS | UserId: USR_001 | Username: admin
+2025-11-19 13:03:00 | COLLECTEUR GET ALL | Start fetching all collecteurs
+2025-11-19 13:03:00 | COLLECTEUR GET ALL | Raw rows fetched: 5
+2025-11-19 13:03:00 | COLLECTEUR GET ALL | Final count=2
+2025-11-19 13:03:26 | AUTH LOGIN ATTEMPT | Username: admin
+2025-11-19 13:03:26 | AUTH LOGIN SUCCESS | UserId: USR_001 | Username: admin
+2025-11-19 13:03:30 | COLLECTEUR GET ALL | Start fetching all collecteurs
+2025-11-19 13:03:30 | COLLECTEUR GET ALL | Raw rows fetched: 5
+2025-11-19 13:03:30 | COLLECTEUR GET ALL | Final count=2
+2025-11-19 13:03:32 | COLLECTEUR GET BY ID | Id=COL_002
+2025-11-19 13:03:32 | COLLECTEUR GET BY ID | SUCCESS | Id=COL_002
+2025-11-19 13:03:36 | COLLECTEUR UPDATE ATTEMPT | Id=COL_002 | Name='test2hhp' | Zone='SUD'
+2025-11-19 13:03:36 | COLLECTEUR UPDATE | Fields updated | Id=COL_002
+2025-11-19 13:03:36 | COLLECTEUR UPDATE | Cleared old product links | Id=COL_002
+2025-11-19 13:03:36 | COLLECTEUR UPDATE | Added product link | Collecteur=COL_002 | Produit=PRO_005
+2025-11-19 13:03:36 | COLLECTEUR UPDATE | Added product link | Collecteur=COL_002 | Produit=PRO_001
+2025-11-19 13:03:36 | COLLECTEUR UPDATE | Added product link | Collecteur=COL_002 | Produit=PRO_002
+2025-11-19 13:03:36 | COLLECTEUR UPDATE SUCCESS | Id=COL_002
+2025-11-19 13:03:38 | COLLECTEUR GET ALL | Start fetching all collecteurs
+2025-11-19 13:03:38 | COLLECTEUR GET ALL | Raw rows fetched: 5
+2025-11-19 13:03:38 | COLLECTEUR GET ALL | Final count=2
+2025-11-19 19:44:53 | AUTH LOGIN ATTEMPT | Username: admin
+2025-11-19 19:44:54 | AUTH LOGIN SUCCESS | UserId: USR_001 | Username: admin
+2025-11-20 00:44:22 | AUTH LOGIN ATTEMPT | Username: admin
+2025-11-20 00:44:22 | AUTH LOGIN SUCCESS | UserId: USR_001 | Username: admin
+2025-11-20 01:00:45 | CollecteController - GET ALL collectes
+2025-11-20 01:00:45 | CollecteController - RETURN 3 collectes
+2025-11-20 01:00:56 | COLLECTEUR GET ALL | Start fetching all collecteurs
+2025-11-20 01:00:56 | COLLECTEUR GET ALL | Raw rows fetched: 5
+2025-11-20 01:00:56 | COLLECTEUR GET ALL | Final count=2
+2025-11-20 01:00:56 | CollecteController - GET collecte by ID=COLL_003
+2025-11-20 01:00:56 | CollecteController - Collecte ID=COLL_003 trouvée
+2025-11-20 01:01:00 | CollecteController - UPDATE collecte ID=COLL_003
+2025-11-20 01:01:00 | CollecteController - UPDATE SUCCESS ID=COLL_003
+2025-11-20 01:01:01 | CollecteController - GET ALL collectes
+2025-11-20 01:01:01 | CollecteController - RETURN 3 collectes
+2025-11-20 01:06:08 | ProduitController → GET ALL produits demandé
+2025-11-20 01:06:17 | ProduitController → UPDATE produit ID=PRO_006, NouveauNom=Girofle
+2025-11-20 01:06:18 | ProduitController → GET ALL produits demandé
+2025-11-20 01:06:46 | ProduitController → UPDATE produit ID=PRO_006, NouveauNom=Girofle
+2025-11-20 01:06:48 | ProduitController → GET ALL produits demandé
+2025-11-20 01:07:28 | ProduitController → CREATE produit ID=PRO_007, Nom=vanille tube
+2025-11-20 01:07:30 | ProduitController → GET ALL produits demandé
+2025-11-20 01:10:59 | ProduitController → DELETE produit ID=PRO_006
+2025-11-20 13:20:20 | AUTH LOGIN ATTEMPT | Username: admin
+2025-11-20 13:20:21 | AUTH LOGIN SUCCESS | UserId: USR_001 | Username: admin
+2025-11-21 00:27:49 | AUTH LOGIN ATTEMPT | Username: admin
+2025-11-21 00:27:49 | AUTH LOGIN SUCCESS | UserId: USR_001 | Username: admin
+2025-11-21 00:27:49 | PaysController → GET ALL pays
+2025-11-21 00:27:49 | PaysController → GET ALL pays
+2025-11-21 00:28:23 | PaysController → CREATE Pays ID=PAY_002, Nom=Grece
+2025-11-21 00:28:27 | CLIENT CREATE ATTEMPT | Name='testPays' | Mail='testpays@gmaul.com'
+2025-11-21 00:28:27 | CLIENT CREATED | Id=CLI_003 | Name='testPays'
+2025-11-21 00:28:27 | CLIENT ADD COUNTRY | ClientId=CLI_003 | CountryId=PAY_002
+2025-11-21 00:39:30 | UniteController → GET ALL unités
+2025-11-21 00:39:33 | RoleController → GET ALL roles
+2025-11-21 00:40:21 | UserController → CREATE user ID=USE_004, username=John
+2025-11-21 00:40:23 | UserController → GET ALL users
+
+
+
+2025-11-21 01:18:09 | CLIENT SEARCH | Query = 'te'
+2025-11-21 01:18:09 | CLIENT SEARCH RESULT | Query='te' | Count=3
+2025-11-21 10:02:01 | PaysController → GET ALL pays
+2025-11-21 10:46:14 | AUTH LOGIN ATTEMPT | Username: admin
+2025-11-21 10:46:14 | AUTH LOGIN SUCCESS | UserId: USR_001 | Username: admin
+2025-11-21 10:46:14 | PaysController → GET ALL pays
+2025-11-21 10:46:14 | PaysController → GET ALL pays
+2025-11-21 10:46:18 | CLIENT GET ALL | Fetching all clients with countries…
+2025-11-21 10:46:18 | CLIENT GET ALL | Total=5
+2025-11-21 10:46:23 | CLIENT DELETE ATTEMPT | Id=CLI_005
+2025-11-21 10:46:23 | CLIENT DELETED | Id=CLI_005
+2025-11-21 10:46:24 | CLIENT GET ALL | Fetching all clients with countries…
+2025-11-21 10:46:24 | CLIENT GET ALL | Total=4
+2025-11-21 10:47:30 | UniteController → GET ALL unités
+2025-11-21 10:47:39 | CLIENT GET ALL | Fetching all clients with countries…
+2025-11-21 10:47:39 | CLIENT GET ALL | Total=4
+2025-11-21 10:47:56 | RoleController → GET ALL roles
+2025-11-21 19:48:23 | AUTH LOGIN ATTEMPT | Username: admin
+2025-11-21 19:48:24 | AUTH LOGIN SUCCESS | UserId: USR_001 | Username: admin
+2025-11-21 19:48:24 | PaysController → GET ALL pays
+2025-11-21 19:48:24 | PaysController → GET ALL pays
