@@ -3,7 +3,7 @@ using Npgsql;
 using Dapper;
 using Sustainable.Models;
 using Sustainable.Helpers;
-using Sustainable.Services;   // ⬅️ Ajout pour utiliser LogService
+using Sustainable.Services; 
 
 namespace Sustainable.Controllers
 {
@@ -18,7 +18,6 @@ namespace Sustainable.Controllers
             _config = config;
         }
 
-        // 🔍 Recherche par nom / mail / spécificité
         [HttpGet("search")]
         public async Task<IActionResult> SearchClients([FromQuery] string q)
         {
@@ -38,7 +37,6 @@ namespace Sustainable.Controllers
             return Ok(clients);
         }
 
-        // 📋 Liste complète (avec pays, spécificité et dernière modification)
         [HttpGet]
         public async Task<IActionResult> GetAllClients()
         {
@@ -68,7 +66,6 @@ namespace Sustainable.Controllers
             return Ok(result);
         }
 
-        // 🌍 Récupère les pays associés
         [HttpGet("{id}/pays")]
         public async Task<IActionResult> GetClientPays(string id)
         {
@@ -95,7 +92,6 @@ namespace Sustainable.Controllers
             return Ok("ClientController is alive!");
         }
 
-        // ➕ Créer un client
         [HttpPost]
         public async Task<IActionResult> CreateClient([FromBody] CreateClientRequest request)
         {
@@ -136,7 +132,6 @@ namespace Sustainable.Controllers
             return Ok(new { IdClient = newIdClient });
         }
 
-        // ✏️ Modifier un client
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateClient(string id, [FromBody] CreateClientRequest request)
         {
@@ -173,7 +168,6 @@ namespace Sustainable.Controllers
             return Ok(new { message = "Client mis à jour avec succès", updatedAt = DateTime.Now });
         }
 
-        // 🗑️ Supprimer un client
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteClient(string id)
         {
