@@ -27,4 +27,26 @@ namespace Sustainable.Models
         public List<string> PaysSelectionnes { get; set; } = new();
         public List<string> ProduitsSelectionnes { get; set; } = new();
     }
+
+    // 🔹 Règle "document pour produit + pays"
+    public class ProduitPaysRule
+    {
+        public string IdProduitDocumentPays { get; set; } = string.Empty;
+
+        public string IdProduit { get; set; } = string.Empty;
+        public string NomProduit { get; set; } = string.Empty;
+
+        public string IdDocument { get; set; } = string.Empty;
+        public string NomDocument { get; set; } = string.Empty;
+
+        public string IdPays { get; set; } = string.Empty;
+        public string NomPays { get; set; } = string.Empty;
+    }
+
+    public class CreateRuleRequest
+    {
+        public string IdProduit { get; set; } = string.Empty;
+        public string IdDocument { get; set; } = string.Empty;
+        public string IdPays { get; set; } = string.Empty;
+    }
 }

@@ -87,7 +87,7 @@ namespace Sustainable.Controllers
             var lastId = await connection.ExecuteScalarAsync<string>(
                 "SELECT iduser FROM users ORDER BY iduser DESC LIMIT 1");
 
-            var newIdUser = IdGenerator.GenerateId("USE_", lastId);
+            var newIdUser = IdGenerator.GenerateId("USR_", lastId);
 
             await connection.ExecuteAsync(@"
                 INSERT INTO users 
