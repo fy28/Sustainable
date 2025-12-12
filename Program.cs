@@ -1,25 +1,29 @@
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Ajouter support des controllers
+// 1. Controllers
 builder.Services.AddControllers();
 
-// 2. Ajouter CORS
+// 2. CORS corrigé + support FormData
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowVue",
-        policy => policy
-            .WithOrigins("http://localhost:8081") // ton front Vue
+    options.AddPolicy("AllowVue", policy =>
+        policy
+            .WithOrigins(
+                "http://localhost:8080",
+                "http://localhost:8081"
+            )
             .AllowAnyHeader()
-            .AllowAnyMethod());
+            .AllowAnyMethod()
+            .AllowCredentials());
 });
 
-// (optionnel) Swagger pour tester facilement l’API
+// Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Activer Swagger seulement en développement
+// Swagger
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -28,13 +32,18 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("AllowVue");
 
-// (optionnel) HTTPS redirection si tu veux forcer https
-// app.UseHttpsRedirection();
+// ⚠️ Important : autoriser les requêtes multipart/form-data
+app.Use(async (context, next) =>
+{
+    context.Request.EnableBuffering();
+    await next();
+});
 
-// 3. Activer les controllers (AuthController, etc.)
+// Routes API
 app.MapControllers();
 
 app.Run();
+
 
 
 //OG
