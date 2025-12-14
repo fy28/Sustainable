@@ -18,7 +18,9 @@ namespace Sustainable.Controllers
             _config = config;
         }
 
-        // 📋 GET : liste de toutes les expéditions (avec produits + docs)
+        // --------------------------------------------------------
+        // 📌 GET ALL EXPEDITIONS
+        // --------------------------------------------------------
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -37,6 +39,7 @@ namespace Sustainable.Controllers
                     ep.idexpeditionproduit AS IdExpeditionProduit,
                     pr.idproduit           AS IdProduit,
                     pr.nom                 AS NomProduit,
+                    pr.prix                AS PrixUnitaire,     -- 🔥 AJOUT
                     ep.quantite            AS Quantite,
                     ep.unite               AS Unite,
 
@@ -44,12 +47,12 @@ namespace Sustainable.Controllers
                     d.iddocument            AS IdDocument,
                     d.nomdocument           AS NomDocument
                 FROM expedition e
-                LEFT JOIN client c           ON e.idclient = c.idclient
-                LEFT JOIN pays p             ON e.idpaysdestination = p.idpays
-                LEFT JOIN expeditionproduit ep ON e.idexpedition = ep.idexpedition
-                LEFT JOIN produit pr         ON ep.idproduit = pr.idproduit
+                LEFT JOIN client c              ON e.idclient = c.idclient
+                LEFT JOIN pays p                ON e.idpaysdestination = p.idpays
+                LEFT JOIN expeditionproduit ep  ON e.idexpedition = ep.idexpedition
+                LEFT JOIN produit pr            ON pr.idproduit = ep.idproduit
                 LEFT JOIN expeditiondocument ed ON e.idexpedition = ed.idexpedition
-                LEFT JOIN document d         ON ed.iddocument = d.iddocument
+                LEFT JOIN document d            ON ed.iddocument = d.iddocument
                 ORDER BY e.datecreation DESC, e.idexpedition;
             ";
 
@@ -78,7 +81,6 @@ namespace Sustainable.Controllers
                     dict[idExp] = exp;
                 }
 
-                // Produits
                 if (r.idexpeditionproduit != null)
                 {
                     exp.Produits.Add(new ExpeditionProduit
@@ -87,29 +89,28 @@ namespace Sustainable.Controllers
                         IdProduit = r.idproduit,
                         NomProduit = r.nomproduit,
                         Quantite = r.quantite,
-                        Unite = r.unite
+                        Unite = r.unite,
+                        PrixUnitaire = r.prixunitaire // 🔥 AJOUT
                     });
                 }
 
-                // Documents
-                if (r.iddocument != null)
+                if (r.iddocument != null &&
+                    !exp.Documents.Any(d => d.IdDocument == (string)r.iddocument))
                 {
-                    // éviter les doublons
-                    if (!exp.Documents.Any(d => d.IdDocument == (string)r.iddocument))
+                    exp.Documents.Add(new DocItem
                     {
-                        exp.Documents.Add(new DocItem
-                        {
-                            IdDocument = r.iddocument,
-                            NomDocument = r.nomdocument
-                        });
-                    }
+                        IdDocument = r.iddocument,
+                        NomDocument = r.nomdocument
+                    });
                 }
             }
 
             return Ok(dict.Values);
         }
 
-        // 🔍 GET : une expédition par id
+        // --------------------------------------------------------
+        // 📌 GET EXPEDITION BY ID
+        // --------------------------------------------------------
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(string id)
         {
@@ -128,6 +129,7 @@ namespace Sustainable.Controllers
                     ep.idexpeditionproduit AS IdExpeditionProduit,
                     pr.idproduit           AS IdProduit,
                     pr.nom                 AS NomProduit,
+                    pr.prix                AS PrixUnitaire,     -- 🔥 AJOUT
                     ep.quantite            AS Quantite,
                     ep.unite               AS Unite,
 
@@ -135,12 +137,12 @@ namespace Sustainable.Controllers
                     d.iddocument            AS IdDocument,
                     d.nomdocument           AS NomDocument
                 FROM expedition e
-                LEFT JOIN client c           ON e.idclient = c.idclient
-                LEFT JOIN pays p             ON e.idpaysdestination = p.idpays
-                LEFT JOIN expeditionproduit ep ON e.idexpedition = ep.idexpedition
-                LEFT JOIN produit pr         ON ep.idproduit = pr.idproduit
+                LEFT JOIN client c              ON e.idclient = c.idclient
+                LEFT JOIN pays p                ON e.idpaysdestination = p.idpays
+                LEFT JOIN expeditionproduit ep  ON e.idexpedition = ep.idexpedition
+                LEFT JOIN produit pr            ON pr.idproduit = ep.idproduit
                 LEFT JOIN expeditiondocument ed ON e.idexpedition = ed.idexpedition
-                LEFT JOIN document d         ON ed.iddocument = d.iddocument
+                LEFT JOIN document d            ON ed.iddocument = d.iddocument
                 WHERE e.idexpedition = @Id;
             ";
 
@@ -177,7 +179,8 @@ namespace Sustainable.Controllers
                         IdProduit = r.idproduit,
                         NomProduit = r.nomproduit,
                         Quantite = r.quantite,
-                        Unite = r.unite
+                        Unite = r.unite,
+                        PrixUnitaire = r.prixunitaire // 🔥 AJOUT
                     });
                 }
 
@@ -195,46 +198,86 @@ namespace Sustainable.Controllers
             return Ok(exp);
         }
 
-// 📄 GET : Documents nécessaires pour un produit + pays
-[HttpGet("docs")]
-public async Task<IActionResult> GetDocuments([FromQuery] string produit, [FromQuery] string pays)
-{
-    using var conn = new NpgsqlConnection(_config.GetConnectionString("DefaultConnection"));
+        // --------------------------------------------------------
+        // 📌 GET DOCUMENTS REQUIS POUR PRODUIT + PAYS
+        // --------------------------------------------------------
+        [HttpGet("docs")]
+        public async Task<IActionResult> GetDocuments([FromQuery] string produit, [FromQuery] string pays)
+        {
+            using var conn = new NpgsqlConnection(_config.GetConnectionString("DefaultConnection"));
 
-    var sql = @"
-        SELECT DISTINCT d.iddocument AS IdDocument, d.nomdocument AS NomDocument
-        FROM produitdocument pd
-        JOIN document d ON d.iddocument = pd.iddocument
-        LEFT JOIN produitdocumentpays pdp ON pdp.idproduitdocument = pd.idproduitdocument
-        WHERE pd.idproduit = @Prod
-          AND (pdp.idpays = @Pays OR pdp.idpays IS NULL);
-    ";
+            var all = new List<DocItem>();
+            var seen = new HashSet<string>();
 
-    var docs = await conn.QueryAsync<DocItem>(sql, new { Prod = produit, Pays = pays });
+            var sqlPaysGlobal = @"
+                SELECT d.iddocument, d.nomdocument
+                FROM documentpays dp
+                JOIN document d ON d.iddocument = dp.iddocument
+                WHERE dp.idpays = @Pays;
+            ";
 
-    return Ok(docs);
-}
+            var docsPays = await conn.QueryAsync<DocItem>(sqlPaysGlobal, new { Pays = pays });
 
+            foreach (var d in docsPays)
+                if (seen.Add(d.IdDocument!))
+                    all.Add(d);
 
-        // ➕ POST : créer une expédition + produits + documents auto
+            var sqlProdPays = @"
+                SELECT d.iddocument, d.nomdocument
+                FROM produitdocument pd
+                JOIN produitdocumentpays pdp ON pdp.idproduitdocument = pd.idproduitdocument
+                JOIN document d ON d.iddocument = pd.iddocument
+                WHERE pd.idproduit = @Prod
+                AND pdp.idpays = @Pays;
+            ";
+
+            var docsProdPays = (await conn.QueryAsync<DocItem>(
+                sqlProdPays, new { Prod = produit, Pays = pays })).ToList();
+
+            if (docsProdPays.Any())
+            {
+                foreach (var d in docsProdPays)
+                    if (seen.Add(d.IdDocument!))
+                        all.Add(d);
+            }
+            else
+            {
+                var sqlProdDefault = @"
+                    SELECT d.iddocument, d.nomdocument
+                    FROM produitdocument pd
+                    JOIN document d ON d.iddocument = pd.iddocument
+                    WHERE pd.idproduit = @Prod;
+                ";
+
+                var docsProd = await conn.QueryAsync<DocItem>(
+                    sqlProdDefault, new { Prod = produit });
+
+                foreach (var d in docsProd)
+                    if (seen.Add(d.IdDocument!))
+                        all.Add(d);
+            }
+
+            return Ok(all);
+        }
+
+        // --------------------------------------------------------
+        // 📌 CREATION EXPEDITION
+        // --------------------------------------------------------
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateExpeditionRequest request)
         {
             using var conn = new NpgsqlConnection(_config.GetConnectionString("DefaultConnection"));
             await conn.OpenAsync();
-
             using var tx = conn.BeginTransaction();
 
             try
             {
-                // 1️⃣ Générer l'id d'expédition
                 var lastId = await conn.ExecuteScalarAsync<string>(
                     "SELECT idexpedition FROM expedition ORDER BY idexpedition DESC LIMIT 1",
                     transaction: tx);
 
                 var newIdExp = IdGenerator.GenerateId("EXP_", lastId);
 
-                // 2️⃣ Insérer dans expedition
                 await conn.ExecuteAsync(@"
                     INSERT INTO expedition (idexpedition, idclient, idpaysdestination, datelivraison, datecreation)
                     VALUES (@Id, @Client, @Pays, @DateLivraison, NOW())",
@@ -246,8 +289,36 @@ public async Task<IActionResult> GetDocuments([FromQuery] string produit, [FromQ
                         DateLivraison = request.DateLivraison
                     }, tx);
 
-                // 3️⃣ Insert des lignes produits
                 var allDocIds = new HashSet<string>();
+
+                var sqlPaysGlobal = @"
+                    SELECT d.iddocument
+                    FROM documentpays dp
+                    JOIN document d ON d.iddocument = dp.iddocument
+                    WHERE dp.idpays = @Pays;
+                ";
+
+                var sqlProdPays = @"
+                    SELECT d.iddocument
+                    FROM produitdocument pd
+                    JOIN produitdocumentpays pdp ON pdp.idproduitdocument = pd.idproduitdocument
+                    JOIN document d ON d.iddocument = pd.iddocument
+                    WHERE pd.idproduit = @Prod
+                    AND pdp.idpays = @Pays;
+                ";
+
+                var sqlProdDefault = @"
+                    SELECT d.iddocument
+                    FROM produitdocument pd
+                    JOIN document d ON d.iddocument = pd.iddocument
+                    WHERE pd.idproduit = @Prod;
+                ";
+
+                var docsPays = await conn.QueryAsync<string>(
+                    sqlPaysGlobal, new { Pays = request.IdPaysDestination }, tx);
+
+                foreach (var doc in docsPays)
+                    allDocIds.Add(doc);
 
                 foreach (var ligne in request.Lignes)
                 {
@@ -269,59 +340,47 @@ public async Task<IActionResult> GetDocuments([FromQuery] string produit, [FromQ
                             Unite = ligne.Unite
                         }, tx);
 
-                    // 4️⃣ Récupérer les documents nécessaires pour ce produit + pays
-                    var docSql = @"
-                        SELECT DISTINCT d.iddocument AS IdDocument, d.nomdocument AS NomDocument
-                        FROM produitdocument pd
-                        JOIN document d ON d.iddocument = pd.iddocument
-                        LEFT JOIN produitdocumentpays pdp ON pdp.idproduitdocument = pd.idproduitdocument
-                        WHERE pd.idproduit = @Prod
-                          AND (pdp.idpays = @Pays OR pdp.idpays IS NULL);
-                    ";
+                    var docsProdPays = (await conn.QueryAsync<string>(
+                        sqlProdPays,
+                        new { Prod = ligne.IdProduit, Pays = request.IdPaysDestination },
+                        tx)).ToList();
 
-                    var docs = await conn.QueryAsync<DocItem>(docSql,
-                        new { Prod = ligne.IdProduit, Pays = request.IdPaysDestination }, tx);
-
-                    foreach (var doc in docs)
+                    if (docsProdPays.Any())
                     {
-                        if (doc.IdDocument == null) continue;
-                        allDocIds.Add(doc.IdDocument);
+                        foreach (var doc in docsProdPays)
+                            allDocIds.Add(doc);
+                    }
+                    else
+                    {
+                        var docsProd = await conn.QueryAsync<string>(
+                            sqlProdDefault, new { Prod = ligne.IdProduit }, tx);
+
+                        foreach (var doc in docsProd)
+                            allDocIds.Add(doc);
                     }
                 }
 
-                // 5️⃣ Insérer les documents de l'expédition (une seule fois par doc)
                 foreach (var docId in allDocIds)
                 {
-                    var lastDocExpId = await conn.ExecuteScalarAsync<string>(
+                    var lastDocId = await conn.ExecuteScalarAsync<string>(
                         "SELECT idexpeditiondocument FROM expeditiondocument ORDER BY idexpeditiondocument DESC LIMIT 1",
                         transaction: tx);
 
-                    var newDocExpId = IdGenerator.GenerateId("EXPD_", lastDocExpId);
+                    var newDocId = IdGenerator.GenerateId("EXPD_", lastDocId);
 
                     await conn.ExecuteAsync(@"
                         INSERT INTO expeditiondocument (idexpeditiondocument, idexpedition, iddocument)
                         VALUES (@Id, @Exp, @Doc)",
-                        new
-                        {
-                            Id = newDocExpId,
-                            Exp = newIdExp,
-                            Doc = docId
-                        }, tx);
+                        new { Id = newDocId, Exp = newIdExp, Doc = docId }, tx);
                 }
 
                 await tx.CommitAsync();
-
-                // 🧾 Log
-                var user = HttpContext.Items["UserName"] as string ?? "Unknown";
-                LogService.Log($"[EXPEDITION][CREATE] User={user} Client={request.IdClient} Pays={request.IdPaysDestination} Lignes={request.Lignes.Count}");
-
                 return Ok(new { IdExpedition = newIdExp, message = "Expédition créée avec succès" });
             }
             catch (Exception ex)
             {
                 await tx.RollbackAsync();
-                LogService.Log($"[EXPEDITION][ERROR] {ex.Message}");
-                return StatusCode(500, new { message = "Erreur lors de la création de l'expédition" });
+                return StatusCode(500, new { message = ex.Message });
             }
         }
     }
