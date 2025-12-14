@@ -26,6 +26,8 @@ namespace Sustainable.Models
         public string? NomProduit { get; set; }
         public decimal Quantite { get; set; }
         public string? Unite { get; set; }
+
+        public decimal PrixUnitaire { get; set; }
     }
 
     public class DocItem
