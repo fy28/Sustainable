@@ -3,7 +3,7 @@ using Npgsql;
 using Dapper;
 using Sustainable.Models;
 using Sustainable.Helpers;
-using Sustainable.Services; 
+using Sustainable.Services;
 
 namespace Sustainable.Controllers
 {
@@ -18,6 +18,9 @@ namespace Sustainable.Controllers
             _config = config;
         }
 
+        // --------------------------------------------------------
+        // 📌 GET ALL COLLECTES
+        // --------------------------------------------------------
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -34,6 +37,7 @@ namespace Sustainable.Controllers
                     c.idproduit AS IdProduit,
                     p.nom AS NomProduit,
                     c.quantite AS Quantite,
+                    c.prix_kg AS PrixKg, -- 🔥 AJOUT
                     c.datecollecte AS DateCollecte,
                     c.statut AS Statut,
                     c.datearrivee AS DateArrivee,
@@ -51,7 +55,9 @@ namespace Sustainable.Controllers
             return Ok(result);
         }
 
-        // Récupérer une collecte spécifique
+        // --------------------------------------------------------
+        // 📌 GET COLLECTE BY ID
+        // --------------------------------------------------------
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(string id)
         {
@@ -68,6 +74,7 @@ namespace Sustainable.Controllers
                     c.idproduit AS IdProduit,
                     p.nom AS NomProduit,
                     c.quantite AS Quantite,
+                    c.prix_kg AS PrixKg, -- 🔥 AJOUT
                     c.datecollecte AS DateCollecte,
                     c.statut AS Statut,
                     c.datearrivee AS DateArrivee,
@@ -90,6 +97,9 @@ namespace Sustainable.Controllers
             return Ok(collecte);
         }
 
+        // --------------------------------------------------------
+        // 📌 CREATE COLLECTE
+        // --------------------------------------------------------
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateCollecteRequest request)
         {
@@ -100,17 +110,27 @@ namespace Sustainable.Controllers
 
             var lastId = await conn.ExecuteScalarAsync<string>(
                 "SELECT idcollecte FROM collecte ORDER BY idcollecte DESC LIMIT 1");
+
             var newId = IdGenerator.GenerateId("COLL_", lastId);
 
             await conn.ExecuteAsync(@"
-                INSERT INTO collecte (idcollecte, idcollecteur, idproduit, quantite, datecollecte, statut, datearrivee, derniere_modification)
-                VALUES (@Id, @Collecteur, @Produit, @Quantite, @DateCollecte, @Statut, @DateArrivee, NOW())",
+                INSERT INTO collecte (
+                    idcollecte, idcollecteur, idproduit,
+                    quantite, prix_kg,
+                    datecollecte, statut, datearrivee, derniere_modification
+                )
+                VALUES (
+                    @Id, @Collecteur, @Produit,
+                    @Quantite, @PrixKg,
+                    @DateCollecte, @Statut, @DateArrivee, NOW()
+                )",
                 new
                 {
                     Id = newId,
                     Collecteur = request.IdCollecteur,
                     Produit = request.IdProduit,
                     request.Quantite,
+                    request.PrixKg, // 🔥 AJOUT
                     request.DateCollecte,
                     request.Statut,
                     request.DateArrivee
@@ -121,6 +141,9 @@ namespace Sustainable.Controllers
             return Ok(new { IdCollecte = newId, message = "Collecte enregistrée avec succès" });
         }
 
+        // --------------------------------------------------------
+        // 📌 UPDATE COLLECTE
+        // --------------------------------------------------------
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(string id, [FromBody] CreateCollecteRequest request)
         {
@@ -134,6 +157,7 @@ namespace Sustainable.Controllers
                 SET idcollecteur = @Collecteur,
                     idproduit = @Produit,
                     quantite = @Quantite,
+                    prix_kg = @PrixKg, -- 🔥 AJOUT
                     datecollecte = @DateCollecte,
                     statut = @Statut,
                     datearrivee = @DateArrivee,
@@ -145,6 +169,7 @@ namespace Sustainable.Controllers
                     Collecteur = request.IdCollecteur,
                     Produit = request.IdProduit,
                     request.Quantite,
+                    request.PrixKg, // 🔥 AJOUT
                     request.DateCollecte,
                     request.Statut,
                     request.DateArrivee
@@ -160,6 +185,9 @@ namespace Sustainable.Controllers
             return Ok(new { message = "Collecte mise à jour" });
         }
 
+        // --------------------------------------------------------
+        // 📌 DELETE COLLECTE
+        // --------------------------------------------------------
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(string id)
         {

@@ -21,95 +21,92 @@ namespace Sustainable.Controllers
         // --------------------------------------------------------
         // 📌 GET ALL EXPEDITIONS
         // --------------------------------------------------------
-       // --------------------------------------------------------
-// 📌 GET ALL EXPEDITIONS
-// --------------------------------------------------------
-[HttpGet]
-public async Task<IActionResult> GetAll()
-{
-    using var conn = new NpgsqlConnection(_config.GetConnectionString("DefaultConnection"));
-
-    var sql = @"
-        SELECT 
-            e.idexpedition      AS IdExpedition,
-            e.idclient          AS IdClient,
-            c.nomclient         AS ClientName,
-            e.idpaysdestination AS IdPaysDestination,
-            p.nompays           AS NomPaysDestination,
-            e.datelivraison     AS DateLivraison,
-            e.datecreation      AS DateCreation,
-
-            ep.idexpeditionproduit AS IdExpeditionProduit,
-            pr.idproduit           AS IdProduit,
-            pr.nom                 AS NomProduit,
-            ep.quantite            AS Quantite,
-            ep.unite               AS Unite,
-
-            ed.idexpeditiondocument AS IdExpeditionDocument,
-            d.iddocument            AS IdDocument,
-            d.nomdocument           AS NomDocument
-        FROM expedition e
-        LEFT JOIN client c             ON e.idclient = c.idclient
-        LEFT JOIN pays p               ON e.idpaysdestination = p.idpays
-        LEFT JOIN expeditionproduit ep ON e.idexpedition = ep.idexpedition
-        LEFT JOIN produit pr           ON pr.idproduit = ep.idproduit
-        LEFT JOIN expeditiondocument ed ON e.idexpedition = ed.idexpedition
-        LEFT JOIN document d           ON ed.iddocument = d.iddocument
-        ORDER BY e.datecreation DESC, e.idexpedition;
-    ";
-
-    // ✅ Correction ici
-    var rows = await conn.QueryAsync(sql);
-
-    var dict = new Dictionary<string, Expedition>();
-
-    foreach (var r in rows)
-    {
-        string idExp = r.idexpedition;
-
-        if (!dict.TryGetValue(idExp, out var exp))
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
         {
-            exp = new Expedition
+            using var conn = new NpgsqlConnection(_config.GetConnectionString("DefaultConnection"));
+
+            var sql = @"
+                SELECT 
+                    e.idexpedition      AS IdExpedition,
+                    e.idclient          AS IdClient,
+                    c.nomclient         AS ClientName,
+                    e.idpaysdestination AS IdPaysDestination,
+                    p.nompays           AS NomPaysDestination,
+                    e.datelivraison     AS DateLivraison,
+                    e.datecreation      AS DateCreation,
+
+                    ep.idexpeditionproduit AS IdExpeditionProduit,
+                    pr.idproduit           AS IdProduit,
+                    pr.nom                 AS NomProduit,
+                    pr.prix                AS PrixUnitaire,     -- 🔥 AJOUT
+                    ep.quantite            AS Quantite,
+                    ep.unite               AS Unite,
+
+                    ed.idexpeditiondocument AS IdExpeditionDocument,
+                    d.iddocument            AS IdDocument,
+                    d.nomdocument           AS NomDocument
+                FROM expedition e
+                LEFT JOIN client c              ON e.idclient = c.idclient
+                LEFT JOIN pays p                ON e.idpaysdestination = p.idpays
+                LEFT JOIN expeditionproduit ep  ON e.idexpedition = ep.idexpedition
+                LEFT JOIN produit pr            ON pr.idproduit = ep.idproduit
+                LEFT JOIN expeditiondocument ed ON e.idexpedition = ed.idexpedition
+                LEFT JOIN document d            ON ed.iddocument = d.iddocument
+                ORDER BY e.datecreation DESC, e.idexpedition;
+            ";
+
+            var rows = await conn.QueryAsync(sql);
+
+            var dict = new Dictionary<string, Expedition>();
+
+            foreach (var r in rows)
             {
-                IdExpedition = r.idexpedition,
-                IdClient = r.idclient,
-                ClientName = r.clientname,
-                IdPaysDestination = r.idpaysdestination,
-                NomPaysDestination = r.nompaysdestination,
-                DateLivraison = r.datelivraison,
-                DateCreation = r.datecreation,
-                Produits = new List<ExpeditionProduit>(),
-                Documents = new List<DocItem>()
-            };
-            dict[idExp] = exp;
+                string idExp = r.idexpedition;
+
+                if (!dict.TryGetValue(idExp, out var exp))
+                {
+                    exp = new Expedition
+                    {
+                        IdExpedition = r.idexpedition,
+                        IdClient = r.idclient,
+                        ClientName = r.clientname,
+                        IdPaysDestination = r.idpaysdestination,
+                        NomPaysDestination = r.nompaysdestination,
+                        DateLivraison = r.datelivraison,
+                        DateCreation = r.datecreation,
+                        Produits = new List<ExpeditionProduit>(),
+                        Documents = new List<DocItem>()
+                    };
+                    dict[idExp] = exp;
+                }
+
+                if (r.idexpeditionproduit != null)
+                {
+                    exp.Produits.Add(new ExpeditionProduit
+                    {
+                        IdExpeditionProduit = r.idexpeditionproduit,
+                        IdProduit = r.idproduit,
+                        NomProduit = r.nomproduit,
+                        Quantite = r.quantite,
+                        Unite = r.unite,
+                        PrixUnitaire = r.prixunitaire // 🔥 AJOUT
+                    });
+                }
+
+                if (r.iddocument != null &&
+                    !exp.Documents.Any(d => d.IdDocument == (string)r.iddocument))
+                {
+                    exp.Documents.Add(new DocItem
+                    {
+                        IdDocument = r.iddocument,
+                        NomDocument = r.nomdocument
+                    });
+                }
+            }
+
+            return Ok(dict.Values);
         }
-
-        if (r.idexpeditionproduit != null)
-        {
-            exp.Produits.Add(new ExpeditionProduit
-            {
-                IdExpeditionProduit = r.idexpeditionproduit,
-                IdProduit = r.idproduit,
-                NomProduit = r.nomproduit,
-                Quantite = r.quantite,
-                Unite = r.unite
-            });
-        }
-
-        if (r.iddocument != null &&
-            !exp.Documents.Any(d => d.IdDocument == (string)r.iddocument))
-        {
-            exp.Documents.Add(new DocItem
-            {
-                IdDocument = r.iddocument,
-                NomDocument = r.nomdocument
-            });
-        }
-    }
-
-    return Ok(dict.Values);
-}
-
 
         // --------------------------------------------------------
         // 📌 GET EXPEDITION BY ID
@@ -132,6 +129,7 @@ public async Task<IActionResult> GetAll()
                     ep.idexpeditionproduit AS IdExpeditionProduit,
                     pr.idproduit           AS IdProduit,
                     pr.nom                 AS NomProduit,
+                    pr.prix                AS PrixUnitaire,     -- 🔥 AJOUT
                     ep.quantite            AS Quantite,
                     ep.unite               AS Unite,
 
@@ -139,12 +137,12 @@ public async Task<IActionResult> GetAll()
                     d.iddocument            AS IdDocument,
                     d.nomdocument           AS NomDocument
                 FROM expedition e
-                LEFT JOIN client c             ON e.idclient = c.idclient
-                LEFT JOIN pays p               ON e.idpaysdestination = p.idpays
-                LEFT JOIN expeditionproduit ep ON e.idexpedition = ep.idexpedition
-                LEFT JOIN produit pr           ON pr.idproduit = ep.idproduit
+                LEFT JOIN client c              ON e.idclient = c.idclient
+                LEFT JOIN pays p                ON e.idpaysdestination = p.idpays
+                LEFT JOIN expeditionproduit ep  ON e.idexpedition = ep.idexpedition
+                LEFT JOIN produit pr            ON pr.idproduit = ep.idproduit
                 LEFT JOIN expeditiondocument ed ON e.idexpedition = ed.idexpedition
-                LEFT JOIN document d           ON ed.iddocument = d.iddocument
+                LEFT JOIN document d            ON ed.iddocument = d.iddocument
                 WHERE e.idexpedition = @Id;
             ";
 
@@ -181,7 +179,8 @@ public async Task<IActionResult> GetAll()
                         IdProduit = r.idproduit,
                         NomProduit = r.nomproduit,
                         Quantite = r.quantite,
-                        Unite = r.unite
+                        Unite = r.unite,
+                        PrixUnitaire = r.prixunitaire // 🔥 AJOUT
                     });
                 }
 
@@ -210,7 +209,6 @@ public async Task<IActionResult> GetAll()
             var all = new List<DocItem>();
             var seen = new HashSet<string>();
 
-            // 1️⃣ Docs pays
             var sqlPaysGlobal = @"
                 SELECT d.iddocument, d.nomdocument
                 FROM documentpays dp
@@ -224,7 +222,6 @@ public async Task<IActionResult> GetAll()
                 if (seen.Add(d.IdDocument!))
                     all.Add(d);
 
-            // 2️⃣ Docs produit + pays
             var sqlProdPays = @"
                 SELECT d.iddocument, d.nomdocument
                 FROM produitdocument pd
@@ -245,7 +242,6 @@ public async Task<IActionResult> GetAll()
             }
             else
             {
-                // 3️⃣ Sinon docs par produit
                 var sqlProdDefault = @"
                     SELECT d.iddocument, d.nomdocument
                     FROM produitdocument pd
@@ -276,7 +272,6 @@ public async Task<IActionResult> GetAll()
 
             try
             {
-                // 1️⃣ Générer ID expédition
                 var lastId = await conn.ExecuteScalarAsync<string>(
                     "SELECT idexpedition FROM expedition ORDER BY idexpedition DESC LIMIT 1",
                     transaction: tx);
@@ -296,7 +291,6 @@ public async Task<IActionResult> GetAll()
 
                 var allDocIds = new HashSet<string>();
 
-                // 🔹 Requêtes réutilisables
                 var sqlPaysGlobal = @"
                     SELECT d.iddocument
                     FROM documentpays dp
@@ -320,17 +314,14 @@ public async Task<IActionResult> GetAll()
                     WHERE pd.idproduit = @Prod;
                 ";
 
-                // 2️⃣ Ajouter docs PAYS global (toujours)
                 var docsPays = await conn.QueryAsync<string>(
                     sqlPaysGlobal, new { Pays = request.IdPaysDestination }, tx);
 
                 foreach (var doc in docsPays)
                     allDocIds.Add(doc);
 
-                // 3️⃣ Ajouter lignes produits + docs
                 foreach (var ligne in request.Lignes)
                 {
-                    // Insertion produit
                     var lastLineId = await conn.ExecuteScalarAsync<string>(
                         "SELECT idexpeditionproduit FROM expeditionproduit ORDER BY idexpeditionproduit DESC LIMIT 1",
                         transaction: tx);
@@ -349,7 +340,6 @@ public async Task<IActionResult> GetAll()
                             Unite = ligne.Unite
                         }, tx);
 
-                    // Docs produit + pays
                     var docsProdPays = (await conn.QueryAsync<string>(
                         sqlProdPays,
                         new { Prod = ligne.IdProduit, Pays = request.IdPaysDestination },
@@ -362,7 +352,6 @@ public async Task<IActionResult> GetAll()
                     }
                     else
                     {
-                        // Sinon docs produit
                         var docsProd = await conn.QueryAsync<string>(
                             sqlProdDefault, new { Prod = ligne.IdProduit }, tx);
 
@@ -371,7 +360,6 @@ public async Task<IActionResult> GetAll()
                     }
                 }
 
-                // 4️⃣ Enregistrer les documents expédition
                 foreach (var docId in allDocIds)
                 {
                     var lastDocId = await conn.ExecuteScalarAsync<string>(

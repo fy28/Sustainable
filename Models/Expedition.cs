@@ -19,14 +19,17 @@ namespace Sustainable.Models
         public List<DocItem> Documents { get; set; } = new();
     }
 
-    public class ExpeditionProduit
-    {
-        public string? IdExpeditionProduit { get; set; }
-        public string? IdProduit { get; set; }
-        public string? NomProduit { get; set; }
-        public decimal Quantite { get; set; }
-        public string? Unite { get; set; }
-    }
+ public class ExpeditionProduit
+{
+    public string? IdExpeditionProduit { get; set; }
+    public string? IdProduit { get; set; }
+    public string? NomProduit { get; set; }
+    public decimal Quantite { get; set; }
+    public string? Unite { get; set; }
+
+    // 🔥 AJOUT
+    public decimal PrixUnitaire { get; set; }
+}
 
     public class DocItem
     {

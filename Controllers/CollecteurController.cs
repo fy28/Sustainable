@@ -80,6 +80,78 @@ namespace Sustainable.Controllers
 
             return Ok(dict.Values);
         }
+        // ➕ CREATE — ajout collecteur
+[HttpPost]
+public async Task<IActionResult> Create([FromBody] CreateCollecteurRequest request)
+{
+    LogService.Log($"COLLECTEUR CREATE | Name='{request.NomCollecteur}' | Zone='{request.Zone}'");
+
+    using var conn = new NpgsqlConnection(_config.GetConnectionString("DefaultConnection"));
+    await conn.OpenAsync();
+
+    using var tx = conn.BeginTransaction();
+
+    try
+    {
+        // Générer ID collecteur
+        var lastId = await conn.ExecuteScalarAsync<string>(
+            "SELECT idcollecteur FROM collecteur ORDER BY idcollecteur DESC LIMIT 1",
+            transaction: tx);
+
+        var newId = IdGenerator.GenerateId("COL_", lastId);
+
+        // Insert collecteur
+        await conn.ExecuteAsync(@"
+            INSERT INTO collecteur (idcollecteur, nomcollecteur, contact, zone, derniere_modification)
+            VALUES (@Id, @Nom, @Contact, @Zone, NOW())",
+            new
+            {
+                Id = newId,
+                Nom = request.NomCollecteur,
+                request.Contact,
+                request.Zone
+            },
+            tx
+        );
+
+        LogService.Log($"COLLECTEUR CREATE | Inserted collecteur {newId}");
+
+        // Insert relations collecteur ↔ produits
+        foreach (var prodId in request.ProduitIds.Distinct())
+        {
+            var lastLinkId = await conn.ExecuteScalarAsync<string>(
+                "SELECT idcollecteurproduit FROM collecteurproduit ORDER BY idcollecteurproduit DESC LIMIT 1",
+                transaction: tx);
+
+            var newLinkId = IdGenerator.GenerateId("CLP_", lastLinkId);
+
+            await conn.ExecuteAsync(@"
+                INSERT INTO collecteurproduit (idcollecteurproduit, idcollecteur, idproduit)
+                VALUES (@Id, @CollecteurId, @ProduitId)",
+                new
+                {
+                    Id = newLinkId,
+                    CollecteurId = newId,
+                    ProduitId = prodId
+                },
+                tx
+            );
+
+            LogService.Log($"COLLECTEUR CREATE | Linked product {prodId}");
+        }
+
+        await tx.CommitAsync();
+
+        return Ok(new { message = "Collecteur créé avec succès", idCollecteur = newId });
+    }
+    catch (Exception ex)
+    {
+        await tx.RollbackAsync();
+        LogService.Log($"COLLECTEUR CREATE ERROR | {ex.Message}");
+        return StatusCode(500, new { error = ex.Message });
+    }
+}
+
 
         // 🔍 GET — collecteur par ID
         [HttpGet("{id}")]
